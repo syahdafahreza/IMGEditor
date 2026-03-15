@@ -58,6 +58,10 @@ project "IMGEditorApp"
         "../resource/*.rc"
     }
 
+    postbuildcommands {
+        "{COPYDIR} ../src/lang %{cfg.targetdir}/lang"
+    }
+
     pchheader "pch.h"
     pchsource "../src/pch.cpp"
 

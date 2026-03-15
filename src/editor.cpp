@@ -3,6 +3,7 @@
 #include "widget.h"
 #include "windialogs.h"
 #include "updater.h"
+#include "language.h"
 #include "hotkeys.h"
 #include "utils.h"
 
@@ -151,62 +152,62 @@ void Editor::SetUpdateFound()
 
 void Editor::ProcessMenuBar()
 {
-    if (ImGui::BeginMenu("File"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "File", "File")))
     {
-        if (ImGui::MenuItem("New    (Ctrl + N)"))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "New", "New    (Ctrl + N)")))
             NewArchive();
-        if (ImGui::MenuItem("Open... (Ctrl + O)"))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Open", "Open... (Ctrl + O)")))
             OpenArchive();
-        if (ImGui::MenuItem("Save   (Ctrl + S)", NULL, false, pSelectedArchive && !pSelectedArchive->Path.empty()))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Save", "Save   (Ctrl + S)"), NULL, false, pSelectedArchive && !pSelectedArchive->Path.empty()))
             SaveArchive();
-        if (ImGui::MenuItem("Save as... (Shift + S)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "SaveAs", "Save as... (Shift + S)"), NULL, false, pSelectedArchive))
             SaveArchiveAs();
-        if (ImGui::MenuItem("Close (Shift + X)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Close", "Close (Shift + X)"), NULL, false, pSelectedArchive))
             CloseArchive(pSelectedArchive);
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Edit"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Edit", "Edit")))
     {
-        if (ImGui::MenuItem("Import    (Ctrl + I)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "Import", "Import    (Ctrl + I)"), NULL, false, pSelectedArchive))
             ImportFiles();
-        if (ImGui::MenuItem("Import & replace   (Shift + I)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ImportReplace", "Import & replace   (Shift + I)"), NULL, false, pSelectedArchive))
             ImportAndReplaceFiles();
-        if (ImGui::MenuItem("Dump list", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "DumpList", "Dump list"), NULL, false, pSelectedArchive))
             DumpList();
-        if (ImGui::MenuItem("Export all    (Ctrl + E)", NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ExportAll", "Export all    (Ctrl + E)"), NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
             ExportAll();
-        if (ImGui::MenuItem("Export selected    (Shift + E)", NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ExportSelected", "Export selected    (Shift + E)"), NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
             ExportSelected();
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Selection"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Selection", "Selection")))
     {
-        if (ImGui::MenuItem("Select all    (Ctrl + A)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("SelectionMenu", "SelectAll", "Select all    (Ctrl + A)"), NULL, false, pSelectedArchive))
             SelectAll();
-        if (ImGui::MenuItem("Select Inverse   (Shift + A)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("SelectionMenu", "SelectInverse", "Select Inverse   (Shift + A)"), NULL, false, pSelectedArchive))
             SelectInverse();
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Option"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Option", "Option")))
     {
-        if (ImGui::BeginMenu("Theme", true))
+        if (ImGui::BeginMenu(Language::Get("Menu", "Theme", "Theme"), true))
         {
             Ui::eTheme theme = pApp->GetTheme();
             bool state = (theme == Ui::eTheme::Dark);
-            if (ImGui::MenuItem("Dark theme", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "DarkTheme", "Dark theme"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::Dark);
             }
             state = (theme == Ui::eTheme::Light);
-            if (ImGui::MenuItem("Light theme", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "LightTheme", "Light theme"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::Light);
             }
             state = (theme == Ui::eTheme::SystemDefault);
-            if (ImGui::MenuItem("System default", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "SystemDefault", "System default"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::SystemDefault);
             }
@@ -214,20 +215,34 @@ void Editor::ProcessMenuBar()
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Help"))
+
+    if (ImGui::BeginMenu(Language::Get("Menu", "Language", "Language")))
     {
-        if (ImGui::MenuItem("Check for update"))
+        for (const auto& langInfo : Language::GetAvailableLanguages())
+        {
+            bool state = (Language::GetCurrentLanguageFile() == langInfo.FileName);
+            if (ImGui::MenuItem(langInfo.Name.c_str(), NULL, &state))
+            {
+                Language::SetLanguage(langInfo.FileName);
+            }
+        }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu(Language::Get("Menu", "Help", "Help")))
+    {
+        if (ImGui::MenuItem(Language::Get("Menu", "CheckUpdate", "Check for update")))
         {
             ShellExecute(nullptr, "open", "https://github.com/user-grinch/IMGEditor/releases", nullptr, nullptr, SW_SHOWNORMAL);
         }
-        if (ImGui::MenuItem("Welcome"))
+        if (ImGui::MenuItem(Language::Get("Menu", "Welcome", "Welcome")))
         {
             if (pApp)
             {
                 pApp->SetPopup(WelcomePopup);
             }
         }
-        if (ImGui::MenuItem("About"))
+        if (ImGui::MenuItem(Language::Get("Menu", "About", "About")))
         {
             if (pApp)
             {
@@ -342,7 +357,7 @@ void Editor::ProcessWindow()
                 ImGui::SetNextItemWidth(ImGui::GetColumnWidth() - style.ItemSpacing.x - style.WindowPadding.x);
 
                 static char buf[256] = "";
-                if (ImGui::InputTextWithHint("##Filter", "Search", buf, sizeof(buf)))
+                if (ImGui::InputTextWithHint("##Filter", Language::Get("Window", "Search", "Search..."), buf, sizeof(buf)))
                 {
                     Utils::ConvertUtf8ToWide(buf, FilterText, sizeof(buf));
                     Utils::ToLowerCase(FilterText);
@@ -355,10 +370,10 @@ void Editor::ProcessWindow()
                 {
                     // Freeze the header row
                     ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableSetupColumn("Name");
+                    ImGui::TableSetupColumn(Language::Get("Window", "Name", "Name"));
                     float scl = columnWidth / 445.5f;
-                    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100 * scl);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 75 * scl);
+                    ImGui::TableSetupColumn(Language::Get("Window", "Type", "Type"), ImGuiTableColumnFlags_WidthFixed, 100 * scl);
+                    ImGui::TableSetupColumn(Language::Get("Window", "Size", "Size"), ImGuiTableColumnFlags_WidthFixed, 75 * scl);
                     ImGui::TableHeadersRow();
 
                     if (pSelectedArchive->bUpdateSearch)
@@ -468,15 +483,15 @@ void Editor::ProcessWindow()
                 }
 
                 ImGui::NewLine();
-                ImGui::Text("IMG Format: %s", pSelectedArchive->GetFormatText().c_str());
-                ImGui::Text("Total Entries: %d", pSelectedArchive->EntryList.size());
+                ImGui::Text("%s %s", Language::Get("Window", "ArchiveType", "Archive Type:"), pSelectedArchive->GetFormatText().c_str());
+                ImGui::Text("%s %d", Language::Get("Window", "Entries", "Entries:"), pSelectedArchive->EntryList.size());
                 ImGui::Spacing();
 
                 if (ImGui::BeginTable("Log", 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders))
                 {
                     // Freeze the header row
                     ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableSetupColumn("Logs");
+                    ImGui::TableSetupColumn(Language::Get("Window", "Logs", "Logs"));
                     ImGui::TableHeadersRow();
 
                     std::lock_guard<std::mutex> lock(pSelectedArchive->LogMutex);
@@ -591,6 +606,9 @@ void Editor::Run()
     bool firstLaunch = Config.GetBoolValue("MAIN", "FirstLaunch", true);
     Ui::eTheme theme = static_cast<Ui::eTheme>(Config.GetLongValue("MAIN", "Theme",
                                                                    static_cast<long>(Ui::eTheme::SystemDefault)));
+    const char* lang = Config.GetValue("MAIN", "Language", "en.ini");
+
+    Language::Init(ConfigPath, lang);
 
     Ui::Specification spec;
     spec.Name = EDITOR_TITLE;
@@ -620,9 +638,12 @@ void Editor::Shutdown()
     {
         Config.SetBoolValue("MAIN", "FirstLaunch", false);
         Config.SetLongValue("MAIN", "Theme", static_cast<long>(pApp->GetTheme()));
+        Config.SetValue("MAIN", "Language", Language::GetCurrentLanguageFile().c_str());
         Config.SaveFile(fp);
         fclose(fp);
     }
+
+    Language::Shutdown();
 }
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
