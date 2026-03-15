@@ -324,9 +324,7 @@ void Editor::ProcessWindow()
         }
     }
 
-    ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs;
-    pSelectedArchive = nullptr;
-    if (ImGui::BeginTabBar("Archives", tabFlags))
+    if (ArchiveList.empty())
     {
         for (const auto &archivePtr : ArchiveList)
         {
@@ -501,7 +499,10 @@ void Editor::ProcessWindow()
 
         }
 
-        ImGui::EndTabBar();
+        // Safely remove closed archives outside the loop
+        std::erase_if(ArchiveList, [](const std::unique_ptr<IMGArchive>& arc) {
+            return !arc->bOpen;
+        });
     }
 
     // Safely remove closed archives outside the loop
@@ -626,16 +627,30 @@ void Editor::Shutdown()
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-    // remove quotes
-    for (size_t i = 0; i < MAX_PATH; ++i)
+    // remove quotes if they exist around the path
+    char* pathStart = lpCmdLine;
+    if (pathStart[0] == '"')
     {
-        if (lpCmdLine[i] == '\0')
+        pathStart++;
+        for (size_t i = 0; i < MAX_PATH; ++i)
         {
-            break;
+            if (pathStart[i] == '\0') break;
+            if (pathStart[i] == '"')
+            {
+                pathStart[i] = '\0';
+                break;
+            }
         }
-        if (lpCmdLine[i] == '"')
+    }
+
+    if (pathStart[0] != '\0')
+    {
+        bool exists = std::filesystem::exists(pathStart);
+        if (exists)
         {
-            lpCmdLine[i] = '\0';
+            wchar_t buf[256];
+            Utils::ConvertUtf8ToWide(pathStart, buf, sizeof(buf));
+            Editor::AddArchiveEntry(std::make_unique<IMGArchive>(buf));
         }
     }
 
