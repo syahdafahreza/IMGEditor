@@ -5,6 +5,8 @@
 #include "parser/pc_v1.h"
 #include "parser/pc_v2.h"
 #include "parser/unknown.h"
+#include "utils.h"
+#include "language.h"
 
 IMGArchive::IMGArchive(std::wstring Path, bool CreateNew)
 {

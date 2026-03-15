@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "pc_v1.h"
 #include "../utils.h"
+#include "../language.h"
 
 void ParserPCv1::Open(IMGArchive *pArc)
 {
