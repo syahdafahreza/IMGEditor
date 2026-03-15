@@ -21,30 +21,41 @@ Hotkey deleteSelectedFile{VK_DELETE};      // VK_DELETE
 
 void Editor::AboutPopUp()
 {
-    ImGui::Columns(2, nullptr, false);
-    ImGui::Text("Version: " EDITOR_VERSION);
-    ImGui::Spacing();
-    ImGui::NextColumn();
-    ImGui::Text("Build: %s", __DATE__);
-    ImGui::Columns(1);
+    if (ImGui::BeginTable("AboutTop", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Version: " EDITOR_VERSION);
+        ImGui::TableNextColumn();
+        ImGui::Text("Build: %s", __DATE__);
+        ImGui::EndTable();
+    }
 
     ImGui::Dummy(ImVec2(0, 10));
     Widget::TextCentered("Contributors");
-    ImGui::Columns(2, NULL, false);
-    ImGui::Text("Grinch_");
-    ImGui::NextColumn();
-    ImGui::Text("Michel Rouzic");
-    ImGui::Columns(1);
+    if (ImGui::BeginTable("AboutContributors", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Grinch_");
+        ImGui::TableNextColumn();
+        ImGui::Text("Michel Rouzic");
+        ImGui::EndTable();
+    }
 
     ImGui::Dummy(ImVec2(0, 10));
     Widget::TextCentered("Credits");
-    ImGui::Columns(2, NULL, false);
+    if (ImGui::BeginTable("AboutCredits", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Freetype");
+        ImGui::Text("ImGui");
+        ImGui::TableNextColumn();
+        ImGui::Text("SimpleINI");
+        ImGui::EndTable();
+    }
 
-    ImGui::Text("Freetype");
-    ImGui::Text("ImGui");
-    ImGui::NextColumn();
-    ImGui::Text("SimpleINI");
-    ImGui::Columns(1);
     ImGui::Dummy(ImVec2(0, 10));
 
     if (ImGui::Button("GitHub", Widget::CalcSize(2)))
@@ -118,9 +129,9 @@ const wchar_t *Editor::GetFilterText()
 
 bool Editor::DoesArchiveExist(const std::wstring &name)
 {
-    for (IMGArchive &arc : ArchiveList)
+    for (const auto &arc : ArchiveList)
     {
-        if (std::wstring(arc.FileName) == name)
+        if (std::wstring(arc->FileName) == name)
         {
             return true;
         }
@@ -315,8 +326,9 @@ void Editor::ProcessWindow()
     pSelectedArchive = nullptr;
     if (ImGui::BeginTabBar("Archives", tabFlags))
     {
-        for (IMGArchive &archive : ArchiveList)
+        for (const auto &archivePtr : ArchiveList)
         {
+            IMGArchive &archive = *archivePtr;
             char buf[24];
             Utils::ConvertWideToUtf8(archive.FileName.c_str(), buf, sizeof(buf));
             if (ImGui::BeginTabItem(buf, &archive.bOpen))
@@ -467,6 +479,7 @@ void Editor::ProcessWindow()
                     ImGui::TableSetupColumn("Logs");
                     ImGui::TableHeadersRow();
 
+                    std::lock_guard<std::mutex> lock(pSelectedArchive->LogMutex);
                     int size = static_cast<int>(pSelectedArchive->LogList.size() - 1);
                     char buf[256];
                     for (int i = size; i >= 0; --i)
@@ -484,15 +497,15 @@ void Editor::ProcessWindow()
                 ImGui::EndTabItem();
             }
 
-            // Remove element if closed form editor
-            if (!archive.bOpen)
-            {
-                CloseArchive(&archive);
-            }
         }
 
         ImGui::EndTabBar();
     }
+
+    // Safely remove closed archives outside the loop
+    std::erase_if(ArchiveList, [](const std::unique_ptr<IMGArchive>& arc) {
+        return !arc->bOpen;
+    });
 
     if (!blockHotkeys)
     {
@@ -547,13 +560,13 @@ void Editor::ProcessWindow()
     }
 }
 
-void Editor::AddArchiveEntry(IMGArchive &&archive)
+void Editor::AddArchiveEntry(std::unique_ptr<IMGArchive> archive)
 {
-    if (!archive.bCreateNew)
+    if (!archive->bCreateNew)
     {
-        for (IMGArchive &arc : ArchiveList)
+        for (const auto &arc : ArchiveList)
         {
-            if (arc.Path == archive.Path)
+            if (arc->Path == archive->Path)
             {
                 return;
             }
@@ -627,7 +640,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     bool exists = std::filesystem::exists(&lpCmdLine[1]);
     wchar_t buf[256];
     Utils::ConvertUtf8ToWide(&lpCmdLine[1], buf, sizeof(buf));
-    Editor::AddArchiveEntry(exists ? IMGArchive(buf) : IMGArchive(L"Untitled", true));
+    Editor::AddArchiveEntry(exists ? std::make_unique<IMGArchive>(buf) : std::make_unique<IMGArchive>(L"Untitled", true));
     Updater::CheckUpdate();
     CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&Updater::Process, NULL, NULL, NULL);
     Editor::Run();
@@ -643,14 +656,14 @@ void Editor::NewArchive()
             std::wstring name = std::format(L"Untitled({})", i);
             if (!DoesArchiveExist(name))
             {
-                AddArchiveEntry({name, true});
+                AddArchiveEntry(std::make_unique<IMGArchive>(name, true));
                 break;
             }
         }
     }
     else
     {
-        AddArchiveEntry({L"Untitled", true});
+        AddArchiveEntry(std::make_unique<IMGArchive>(L"Untitled", true));
     }
 }
 
@@ -662,7 +675,7 @@ void Editor::OpenArchive()
     {
         if (IMGArchive::GetVersion(path) != eImgVer::Unknown)
         {
-            AddArchiveEntry(std::move(IMGArchive(std::move(path))));
+            AddArchiveEntry(std::make_unique<IMGArchive>(std::move(path)));
         }
         else
         {
@@ -769,6 +782,8 @@ void Editor::DeleteSelected()
                 return obj.bSelected;
             }),
         pSelectedArchive->EntryList.end());
+    pContextEntry = nullptr;
+    pSelectedArchive->SelectedList.clear(); // Clear to prevent dangling pointers from shifted elements
     pSelectedArchive->bUpdateSearch = true;
 }
 
@@ -802,9 +817,9 @@ void Editor::CloseArchive(IMGArchive *pArchive)
         std::remove_if(
             ArchiveList.begin(),
             ArchiveList.end(),
-            [pArchive](IMGArchive const &obj)
+            [pArchive](const std::unique_ptr<IMGArchive> &obj)
             {
-                return obj.bCreateNew ? obj.FileName == pArchive->FileName : obj.Path == pArchive->Path;
+                return obj->bCreateNew ? obj->FileName == pArchive->FileName : obj->Path == pArchive->Path;
             }),
         ArchiveList.end());
 }
