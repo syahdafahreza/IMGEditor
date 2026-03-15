@@ -5,6 +5,8 @@
 #include "parser/pc_v1.h"
 #include "parser/pc_v2.h"
 #include "parser/unknown.h"
+#include "utils.h"
+#include "language.h"
 
 IMGArchive::IMGArchive(std::wstring Path, bool CreateNew)
 {
@@ -12,7 +14,9 @@ IMGArchive::IMGArchive(std::wstring Path, bool CreateNew)
     {
         this->FileName = Path;
         this->bCreateNew = true;
-        AddLogMessage(L"Created archive");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "CreatedArchive", "Created archive"), logBuf, sizeof(logBuf));
+        AddLogMessage(logBuf);
         Parser = ParserPCv1::Get();
     }
     else
@@ -94,7 +98,9 @@ void IMGArchive::ExportAll(ArchiveInfo *pInfo)
             break;
         }
     }
-    pInfo->pArc->AddLogMessage(L"Exported archive");
+    wchar_t logBuf[256];
+    Utils::ConvertUtf8ToWide(Language::Get("Logs", "ExportedArchive", "Exported archive"), logBuf, sizeof(logBuf));
+    pInfo->pArc->AddLogMessage(logBuf);
     pInfo->pArc->ProgressBar.bInUse = false;
     delete pInfo;
 }
@@ -119,7 +125,9 @@ void IMGArchive::ExportSelected(ArchiveInfo *pInfo)
             }
         }
     }
-    pInfo->pArc->AddLogMessage(L"Exported entries");
+    wchar_t logBuf[256];
+    Utils::ConvertUtf8ToWide(Language::Get("Logs", "ExportedEntries", "Exported entries"), logBuf, sizeof(logBuf));
+    pInfo->pArc->AddLogMessage(logBuf);
     pInfo->pArc->ProgressBar.bInUse = false;
     delete pInfo;
 }
@@ -182,7 +190,7 @@ void IMGArchive::ImportEntries(ArchiveInfo *pInfo)
     {
         pInfo->pArc->ImportEntry(list[i], pInfo->removeExisting);
     }
-    pInfo->pArc->AddLogMessage(std::format(L"Imported {} entries", list.size()));
+    pInfo->pArc->AddLogMessage(std::format(L"Imported {} entries", list.size())); // Leaving this as is since it is formatted with size.
     pInfo->pArc->bUpdateSearch = true;
 }
 

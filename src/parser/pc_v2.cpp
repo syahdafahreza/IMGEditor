@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "pc_v2.h"
 #include "../utils.h"
+#include "../language.h"
 
 void ParserPCv2::Open(IMGArchive *pArc)
 {
@@ -28,17 +29,23 @@ void ParserPCv2::Open(IMGArchive *pArc)
                 entry.Type = IMGArchive::GetFileType(entry.FileName);
                 pArc->EntryList.emplace_back(std::move(entry));
             }
-            pArc->AddLogMessage(L"Opened archive");
+            wchar_t logBuf[256];
+            Utils::ConvertUtf8ToWide(Language::Get("Logs", "OpenedArchive", "Opened archive"), logBuf, sizeof(logBuf));
+            pArc->AddLogMessage(logBuf);
         }
         else
         {
-            pArc->AddLogMessage(L"Open archive failed");
+            wchar_t logBuf[256];
+            Utils::ConvertUtf8ToWide(Language::Get("Logs", "OpenArchiveFailed", "Open archive failed"), logBuf, sizeof(logBuf));
+            pArc->AddLogMessage(logBuf);
         }
         stream.close();
     }
     else
     {
-        pArc->AddLogMessage(L"Archive .dir error");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "ArchiveDirError", "Archive .dir error"), logBuf, sizeof(logBuf));
+        pArc->AddLogMessage(logBuf);
     }
 }
 
@@ -159,7 +166,7 @@ void ParserPCv2::Save(ArchiveInfo *pInfo)
     catch (const std::exception &e)
     {
         pInfo->pArc->ProgressBar.bInUse = false;
-        pInfo->pArc->AddLogMessage(L"Rebuilding failed: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+        pInfo->pArc->AddLogMessage(L"Rebuilding failed: " + std::wstring(e.what(), e.what() + strlen(e.what()))); // Leaving as is for exception.
         std::filesystem::remove(pInfo->path + L".temp");
         pInfo->pArc->ProgressBar.bCancel = false;
     }

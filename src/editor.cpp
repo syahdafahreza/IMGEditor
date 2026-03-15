@@ -275,20 +275,20 @@ void Editor::ProcessContextMenu()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.5f);
     if (ImGui::Begin("##Context", NULL, flags))
     {
-        if (ImGui::MenuItem("Copy name"))
+        if (ImGui::MenuItem(Language::Get("Window", "CopyName", "Copy name")))
         {
             char buf[24];
             Utils::ConvertWideToUtf8(pContextEntry->FileName, buf, sizeof(buf));
             ImGui::SetClipboardText(buf);
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Delete"))
+        if (ImGui::MenuItem(Language::Get("Window", "Delete", "Delete")))
         {
             pContextEntry->bSelected = true;
             DeleteSelected();
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Export"))
+        if (ImGui::MenuItem(Language::Get("Window", "Export", "Export")))
         {
             pContextEntry->bSelected = true;
             std::wstring path = WinDialogs::SaveFolder();
@@ -299,7 +299,7 @@ void Editor::ProcessContextMenu()
             }
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Rename"))
+        if (ImGui::MenuItem(Language::Get("Window", "Rename", "Rename")))
         {
             if (pSelectedArchive)
             {
@@ -487,11 +487,13 @@ void Editor::ProcessWindow()
                 {
                     ImGui::BeginDisabled();
                 }
-                if (ImGui::Button("Cancel", barSz))
+                if (ImGui::Button(Language::Get("Window", "Cancel", "Cancel"), barSz))
                 {
                     pSelectedArchive->ProgressBar.bCancel = true;
                     pSelectedArchive->ProgressBar.Percentage = 0.0f;
-                    pSelectedArchive->AddLogMessage(L"Canceled operation");
+                    wchar_t logBuf[256];
+                    Utils::ConvertUtf8ToWide(Language::Get("Logs", "CanceledOperation", "Canceled operation"), logBuf, sizeof(logBuf));
+                    pSelectedArchive->AddLogMessage(logBuf);
                 }
                 if (!pSelectedArchive->ProgressBar.bInUse)
                 {
@@ -750,7 +752,9 @@ void Editor::SaveArchive()
         {
             ArchiveInfo *info = new ArchiveInfo{pSelectedArchive, pSelectedArchive->Path, pSelectedArchive->GetVersion()};
             CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&IMGArchive::Save, info, NULL, NULL);
-            pSelectedArchive->AddLogMessage(L"Archive saved");
+            wchar_t logBuf[256];
+            Utils::ConvertUtf8ToWide(Language::Get("Logs", "ArchiveSaved", "Archive saved"), logBuf, sizeof(logBuf));
+            pSelectedArchive->AddLogMessage(logBuf);
         }
         else
         {
@@ -768,7 +772,9 @@ void Editor::SaveArchiveAs()
         ArchiveInfo *info = new ArchiveInfo{pSelectedArchive, path, ver, false};
         pSelectedArchive->SetVersion(ver);
         CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&IMGArchive::Save, info, NULL, NULL);
-        pSelectedArchive->AddLogMessage(L"Archive saved");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "ArchiveSaved", "Archive saved"), logBuf, sizeof(logBuf));
+        pSelectedArchive->AddLogMessage(logBuf);
     }
 }
 
@@ -855,7 +861,9 @@ void Editor::DumpList()
         {
             fwprintf(fp, L"%s\n", e.FileName);
         }
-        pSelectedArchive->AddLogMessage(L"Dumped to desktop");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "DumpedToDesktop", "Dumped to desktop"), logBuf, sizeof(logBuf));
+        pSelectedArchive->AddLogMessage(logBuf);
         fclose(fp);
     }
 }
