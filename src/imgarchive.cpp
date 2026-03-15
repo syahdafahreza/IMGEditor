@@ -137,33 +137,48 @@ void IMGArchive::ImportEntries(ArchiveInfo *pInfo)
     std::vector<std::wstring> list;
     std::wstring temp = L"";
     std::wstring rootDir = L"";
-    for (wchar_t c : pInfo->path)
+    for (size_t i = 0; i < pInfo->path.size(); ++i)
     {
-        if (c != '\0')
+        wchar_t c = pInfo->path[i];
+        if (c != L'\0')
         {
             temp += c;
         }
         else
         {
-            if (temp == L"")
+            if (temp.empty())
             {
                 break;
             }
 
-            temp += L"\0";
-            if (std::filesystem::is_directory(temp)) // skip folders
+            if (rootDir.empty() && std::filesystem::is_directory(temp)) // first item might be directory
             {
-                rootDir = std::move(temp) + L"\\";
+                rootDir = temp + L"\\";
             }
             else
             {
-                list.push_back(std::move(rootDir + temp));
+                if (rootDir.empty())
+                {
+                    // Case where only a single file is selected
+                    list.push_back(temp);
+                }
+                else
+                {
+                    // Case where multiple files are selected within rootDir
+                    list.push_back(rootDir + temp);
+                }
             }
-            temp = L"";
+            temp.clear();
+
+            // Double null terminator indicates the end of the list
+            if (i + 1 < pInfo->path.size() && pInfo->path[i + 1] == L'\0')
+            {
+                break;
+            }
         }
     }
     
-    for (size_t i = 0; i != list.size(); ++i)
+    for (size_t i = 0; i < list.size(); ++i)
     {
         pInfo->pArc->ImportEntry(list[i], pInfo->removeExisting);
     }
@@ -173,6 +188,7 @@ void IMGArchive::ImportEntries(ArchiveInfo *pInfo)
 
 void IMGArchive::AddLogMessage(std::wstring &&message)
 {
+    std::lock_guard<std::mutex> lock(LogMutex);
     LogList.push_back(std::move(message));
 }
 
