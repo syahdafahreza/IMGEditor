@@ -59,14 +59,33 @@ void ParserPCv1::Export(IMGArchive *pMgr, EntryInfo *pEntry, const std::wstring 
         const size_t size = pEntry->Sector * SECTOR_SZ;
         imgStream.seekg(pEntry->Offset * SECTOR_SZ);
 
-        std::vector<char> buffer(size);
-        if (imgStream.read(buffer.data(), size))
+        const size_t chunkSize = 1024 * 1024; // 1 MB chunks
+        std::vector<char> buffer((std::min)(chunkSize, size));
+        size_t remaining = size;
+        bool success = true;
+
+        while (remaining > 0)
         {
-            outFile.write(buffer.data(), size);
-            if (logMsg)
+            size_t toRead = (std::min)(remaining, buffer.size());
+            if (imgStream.read(buffer.data(), toRead))
             {
-                pMgr->AddLogMessage(std::format(L"Exported {}", pEntry->FileName));
+                outFile.write(buffer.data(), toRead);
+                remaining -= toRead;
             }
+            else
+            {
+                success = false;
+                break;
+            }
+        }
+
+        if (success && logMsg)
+        {
+            pMgr->AddLogMessage(std::format(L"Exported {}", pEntry->FileName));
+        }
+        else if (!success)
+        {
+            pMgr->AddLogMessage(std::format(L"Export failed for {}", pEntry->FileName));
         }
     }
     else
@@ -108,7 +127,7 @@ void ParserPCv1::Import(IMGArchive *pArc, const std::wstring &path, bool replace
     info.Path = path;
     info.bImported = true;
     info.Type = IMGArchive::GetFileType(info.FileName);
-    info.Sector = GetFileSz(path) / SECTOR_SZ;
+    info.Sector = static_cast<uint32_t>(GetFileSz(path) / SECTOR_SZ);
     pArc->EntryList.push_back(std::move(info));
 }
 
@@ -155,7 +174,7 @@ void ParserPCv1::Save(ArchiveInfo *pInfo)
                     throw std::runtime_error("Open import failed");
                 }
                 size = GetFileSz(e.Path);
-                e.Sector = size / SECTOR_SZ;
+                e.Sector = static_cast<uint32_t>(size / SECTOR_SZ);
             }
             else
             {
@@ -163,18 +182,8 @@ void ParserPCv1::Save(ArchiveInfo *pInfo)
                 size = e.Sector * SECTOR_SZ;
             }
 
-            std::vector<char> buf(size);
-            if (buf.size() > 0)
+            if (size > 0)
             {
-                if (e.bImported)
-                {
-                    fFile.read(buf.data(), size);
-                }
-                else
-                {
-                    fIn.read(buf.data(), size);
-                }
-
                 e.Offset = static_cast<uint32_t>(offset / SECTOR_SZ);
                 std::vector<char> nameBuf(24);
                 Utils::ConvertWideToUtf8(e.FileName, nameBuf.data(), nameBuf.size());
@@ -182,7 +191,25 @@ void ParserPCv1::Save(ArchiveInfo *pInfo)
                 fDir.write(reinterpret_cast<char *>(&e.Offset), sizeof(e.Offset));
                 fDir.write(reinterpret_cast<char *>(&e.Sector), sizeof(e.Sector));
                 fDir.write(nameBuf.data(), nameBuf.size());
-                fImg.write(buf.data(), size);
+
+                const size_t chunkSize = 1024 * 1024;
+                std::vector<char> buf((std::min)(chunkSize, size));
+                size_t remaining = size;
+
+                while (remaining > 0)
+                {
+                    size_t toRead = (std::min)(remaining, buf.size());
+                    if (e.bImported)
+                    {
+                        fFile.read(buf.data(), toRead);
+                    }
+                    else
+                    {
+                        fIn.read(buf.data(), toRead);
+                    }
+                    fImg.write(buf.data(), toRead);
+                    remaining -= toRead;
+                }
 
                 offset += size;
             }
