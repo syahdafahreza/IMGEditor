@@ -80,7 +80,7 @@ void ParserPCv2::Save(ArchiveInfo *pInfo)
                     throw std::runtime_error("Open import failed");
                 }
                 size = GetFileSz(e.Path);
-                e.Sector = size / SECTOR_SZ;
+                e.Sector = static_cast<uint32_t>(size / SECTOR_SZ);
             }
             else
             {
@@ -103,12 +103,12 @@ void ParserPCv2::Save(ArchiveInfo *pInfo)
                 fImg.seekp(offset, std::ios::beg);
 
                 const size_t chunkSize = 1024 * 1024;
-                std::vector<char> buf(std::min(chunkSize, size));
+                std::vector<char> buf((std::min)(chunkSize, size));
                 size_t remaining = size;
 
                 while (remaining > 0)
                 {
-                    size_t toRead = std::min(remaining, buf.size());
+                    size_t toRead = (std::min)(remaining, buf.size());
                     if (e.bImported)
                     {
                         fFile.read(buf.data(), toRead);

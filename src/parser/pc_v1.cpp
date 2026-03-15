@@ -60,13 +60,13 @@ void ParserPCv1::Export(IMGArchive *pMgr, EntryInfo *pEntry, const std::wstring 
         imgStream.seekg(pEntry->Offset * SECTOR_SZ);
 
         const size_t chunkSize = 1024 * 1024; // 1 MB chunks
-        std::vector<char> buffer(std::min(chunkSize, size));
+        std::vector<char> buffer((std::min)(chunkSize, size));
         size_t remaining = size;
         bool success = true;
 
         while (remaining > 0)
         {
-            size_t toRead = std::min(remaining, buffer.size());
+            size_t toRead = (std::min)(remaining, buffer.size());
             if (imgStream.read(buffer.data(), toRead))
             {
                 outFile.write(buffer.data(), toRead);
@@ -127,7 +127,7 @@ void ParserPCv1::Import(IMGArchive *pArc, const std::wstring &path, bool replace
     info.Path = path;
     info.bImported = true;
     info.Type = IMGArchive::GetFileType(info.FileName);
-    info.Sector = GetFileSz(path) / SECTOR_SZ;
+    info.Sector = static_cast<uint32_t>(GetFileSz(path) / SECTOR_SZ);
     pArc->EntryList.push_back(std::move(info));
 }
 
@@ -174,7 +174,7 @@ void ParserPCv1::Save(ArchiveInfo *pInfo)
                     throw std::runtime_error("Open import failed");
                 }
                 size = GetFileSz(e.Path);
-                e.Sector = size / SECTOR_SZ;
+                e.Sector = static_cast<uint32_t>(size / SECTOR_SZ);
             }
             else
             {
@@ -193,12 +193,12 @@ void ParserPCv1::Save(ArchiveInfo *pInfo)
                 fDir.write(nameBuf.data(), nameBuf.size());
 
                 const size_t chunkSize = 1024 * 1024;
-                std::vector<char> buf(std::min(chunkSize, size));
+                std::vector<char> buf((std::min)(chunkSize, size));
                 size_t remaining = size;
 
                 while (remaining > 0)
                 {
-                    size_t toRead = std::min(remaining, buf.size());
+                    size_t toRead = (std::min)(remaining, buf.size());
                     if (e.bImported)
                     {
                         fFile.read(buf.data(), toRead);
