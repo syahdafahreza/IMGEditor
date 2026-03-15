@@ -40,6 +40,8 @@ void Editor::AboutPopUp()
         ImGui::Text("Grinch_");
         ImGui::TableNextColumn();
         ImGui::Text("Michel Rouzic");
+        ImGui::TableNextColumn();
+        ImGui::Text("Syahda Fahreza");
         ImGui::EndTable();
     }
 
