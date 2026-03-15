@@ -3,6 +3,7 @@
 #include "widget.h"
 #include "windialogs.h"
 #include "updater.h"
+#include "language.h"
 #include "hotkeys.h"
 #include "utils.h"
 
@@ -21,30 +22,43 @@ Hotkey deleteSelectedFile{VK_DELETE};      // VK_DELETE
 
 void Editor::AboutPopUp()
 {
-    ImGui::Columns(2, nullptr, false);
-    ImGui::Text("Version: " EDITOR_VERSION);
-    ImGui::Spacing();
-    ImGui::NextColumn();
-    ImGui::Text("Build: %s", __DATE__);
-    ImGui::Columns(1);
+    if (ImGui::BeginTable("AboutTop", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Version: " EDITOR_VERSION);
+        ImGui::TableNextColumn();
+        ImGui::Text("Build: %s", __DATE__);
+        ImGui::EndTable();
+    }
 
     ImGui::Dummy(ImVec2(0, 10));
     Widget::TextCentered("Contributors");
-    ImGui::Columns(2, NULL, false);
-    ImGui::Text("Grinch_");
-    ImGui::NextColumn();
-    ImGui::Text("Michel Rouzic");
-    ImGui::Columns(1);
+    if (ImGui::BeginTable("AboutContributors", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Grinch_");
+        ImGui::TableNextColumn();
+        ImGui::Text("Michel Rouzic");
+        ImGui::TableNextColumn();
+        ImGui::Text("Syahda Fahreza");
+        ImGui::EndTable();
+    }
 
     ImGui::Dummy(ImVec2(0, 10));
     Widget::TextCentered("Credits");
-    ImGui::Columns(2, NULL, false);
+    if (ImGui::BeginTable("AboutCredits", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+        ImGui::Text("Freetype");
+        ImGui::Text("ImGui");
+        ImGui::TableNextColumn();
+        ImGui::Text("SimpleINI");
+        ImGui::EndTable();
+    }
 
-    ImGui::Text("Freetype");
-    ImGui::Text("ImGui");
-    ImGui::NextColumn();
-    ImGui::Text("SimpleINI");
-    ImGui::Columns(1);
     ImGui::Dummy(ImVec2(0, 10));
 
     if (ImGui::Button("GitHub", Widget::CalcSize(2)))
@@ -118,9 +132,9 @@ const wchar_t *Editor::GetFilterText()
 
 bool Editor::DoesArchiveExist(const std::wstring &name)
 {
-    for (IMGArchive &arc : ArchiveList)
+    for (const auto &arc : ArchiveList)
     {
-        if (std::wstring(arc.FileName) == name)
+        if (std::wstring(arc->FileName) == name)
         {
             return true;
         }
@@ -138,62 +152,62 @@ void Editor::SetUpdateFound()
 
 void Editor::ProcessMenuBar()
 {
-    if (ImGui::BeginMenu("File"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "File", "File")))
     {
-        if (ImGui::MenuItem("New    (Ctrl + N)"))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "New", "New    (Ctrl + N)")))
             NewArchive();
-        if (ImGui::MenuItem("Open... (Ctrl + O)"))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Open", "Open... (Ctrl + O)")))
             OpenArchive();
-        if (ImGui::MenuItem("Save   (Ctrl + S)", NULL, false, pSelectedArchive && !pSelectedArchive->Path.empty()))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Save", "Save   (Ctrl + S)"), NULL, false, pSelectedArchive && !pSelectedArchive->Path.empty()))
             SaveArchive();
-        if (ImGui::MenuItem("Save as... (Shift + S)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "SaveAs", "Save as... (Shift + S)"), NULL, false, pSelectedArchive))
             SaveArchiveAs();
-        if (ImGui::MenuItem("Close (Shift + X)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("FileMenu", "Close", "Close (Shift + X)"), NULL, false, pSelectedArchive))
             CloseArchive(pSelectedArchive);
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Edit"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Edit", "Edit")))
     {
-        if (ImGui::MenuItem("Import    (Ctrl + I)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "Import", "Import    (Ctrl + I)"), NULL, false, pSelectedArchive))
             ImportFiles();
-        if (ImGui::MenuItem("Import & replace   (Shift + I)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ImportReplace", "Import & replace   (Shift + I)"), NULL, false, pSelectedArchive))
             ImportAndReplaceFiles();
-        if (ImGui::MenuItem("Dump list", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "DumpList", "Dump list"), NULL, false, pSelectedArchive))
             DumpList();
-        if (ImGui::MenuItem("Export all    (Ctrl + E)", NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ExportAll", "Export all    (Ctrl + E)"), NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
             ExportAll();
-        if (ImGui::MenuItem("Export selected    (Shift + E)", NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
+        if (ImGui::MenuItem(Language::Get("EditMenu", "ExportSelected", "Export selected    (Shift + E)"), NULL, false, pSelectedArchive && !pSelectedArchive->ProgressBar.bInUse))
             ExportSelected();
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Selection"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Selection", "Selection")))
     {
-        if (ImGui::MenuItem("Select all    (Ctrl + A)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("SelectionMenu", "SelectAll", "Select all    (Ctrl + A)"), NULL, false, pSelectedArchive))
             SelectAll();
-        if (ImGui::MenuItem("Select Inverse   (Shift + A)", NULL, false, pSelectedArchive))
+        if (ImGui::MenuItem(Language::Get("SelectionMenu", "SelectInverse", "Select Inverse   (Shift + A)"), NULL, false, pSelectedArchive))
             SelectInverse();
         ImGui::EndMenu();
     }
 
-    if (ImGui::BeginMenu("Option"))
+    if (ImGui::BeginMenu(Language::Get("Menu", "Option", "Option")))
     {
-        if (ImGui::BeginMenu("Theme", true))
+        if (ImGui::BeginMenu(Language::Get("Menu", "Theme", "Theme"), true))
         {
             Ui::eTheme theme = pApp->GetTheme();
             bool state = (theme == Ui::eTheme::Dark);
-            if (ImGui::MenuItem("Dark theme", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "DarkTheme", "Dark theme"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::Dark);
             }
             state = (theme == Ui::eTheme::Light);
-            if (ImGui::MenuItem("Light theme", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "LightTheme", "Light theme"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::Light);
             }
             state = (theme == Ui::eTheme::SystemDefault);
-            if (ImGui::MenuItem("System default", NULL, &state))
+            if (ImGui::MenuItem(Language::Get("Menu", "SystemDefault", "System default"), NULL, &state))
             {
                 pApp->SetTheme(Ui::eTheme::SystemDefault);
             }
@@ -201,20 +215,34 @@ void Editor::ProcessMenuBar()
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Help"))
+
+    if (ImGui::BeginMenu(Language::Get("Menu", "Language", "Language")))
     {
-        if (ImGui::MenuItem("Check for update"))
+        for (const auto& langInfo : Language::GetAvailableLanguages())
+        {
+            bool state = (Language::GetCurrentLanguageFile() == langInfo.FileName);
+            if (ImGui::MenuItem(langInfo.Name.c_str(), NULL, &state))
+            {
+                Language::SetLanguage(langInfo.FileName);
+            }
+        }
+        ImGui::EndMenu();
+    }
+
+    if (ImGui::BeginMenu(Language::Get("Menu", "Help", "Help")))
+    {
+        if (ImGui::MenuItem(Language::Get("Menu", "CheckUpdate", "Check for update")))
         {
             ShellExecute(nullptr, "open", "https://github.com/user-grinch/IMGEditor/releases", nullptr, nullptr, SW_SHOWNORMAL);
         }
-        if (ImGui::MenuItem("Welcome"))
+        if (ImGui::MenuItem(Language::Get("Menu", "Welcome", "Welcome")))
         {
             if (pApp)
             {
                 pApp->SetPopup(WelcomePopup);
             }
         }
-        if (ImGui::MenuItem("About"))
+        if (ImGui::MenuItem(Language::Get("Menu", "About", "About")))
         {
             if (pApp)
             {
@@ -247,20 +275,20 @@ void Editor::ProcessContextMenu()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.5f);
     if (ImGui::Begin("##Context", NULL, flags))
     {
-        if (ImGui::MenuItem("Copy name"))
+        if (ImGui::MenuItem(Language::Get("Window", "CopyName", "Copy name")))
         {
             char buf[24];
             Utils::ConvertWideToUtf8(pContextEntry->FileName, buf, sizeof(buf));
             ImGui::SetClipboardText(buf);
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Delete"))
+        if (ImGui::MenuItem(Language::Get("Window", "Delete", "Delete")))
         {
             pContextEntry->bSelected = true;
             DeleteSelected();
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Export"))
+        if (ImGui::MenuItem(Language::Get("Window", "Export", "Export")))
         {
             pContextEntry->bSelected = true;
             std::wstring path = WinDialogs::SaveFolder();
@@ -271,7 +299,7 @@ void Editor::ProcessContextMenu()
             }
             pContextEntry = nullptr;
         }
-        if (ImGui::MenuItem("Rename"))
+        if (ImGui::MenuItem(Language::Get("Window", "Rename", "Rename")))
         {
             if (pSelectedArchive)
             {
@@ -311,16 +339,31 @@ void Editor::ProcessWindow()
         }
     }
 
-    ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs;
-    pSelectedArchive = nullptr;
-    if (ImGui::BeginTabBar("Archives", tabFlags))
+    if (ArchiveList.empty())
     {
-        for (IMGArchive &archive : ArchiveList)
+        pSelectedArchive = nullptr;
+
+        // Display centered helper text
+        ImVec2 windowSize = ImGui::GetWindowSize();
+        const char* helperText = Language::Get("Window", "HelperText", "Open a IMG file to get started.");
+        ImVec2 textSize = ImGui::CalcTextSize(helperText);
+
+        ImGui::SetCursorPos(ImVec2((windowSize.x - textSize.x) * 0.5f, (windowSize.y - textSize.y) * 0.5f));
+        ImGui::TextDisabled("%s", helperText);
+    }
+    else
+    {
+        ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs;
+        pSelectedArchive = nullptr;
+        if (ImGui::BeginTabBar("Archives", tabFlags))
         {
-            char buf[24];
-            Utils::ConvertWideToUtf8(archive.FileName.c_str(), buf, sizeof(buf));
-            if (ImGui::BeginTabItem(buf, &archive.bOpen))
+            for (const auto &archivePtr : ArchiveList)
             {
+                IMGArchive &archive = *archivePtr;
+                char buf[24];
+                Utils::ConvertWideToUtf8(archive.FileName.c_str(), buf, sizeof(buf));
+                if (ImGui::BeginTabItem(buf, &archive.bOpen))
+                {
                 pSelectedArchive = &archive;
                 ImGui::Columns(2, NULL, false);
                 float columnWidth = windowWidth / 1.5f;
@@ -330,7 +373,7 @@ void Editor::ProcessWindow()
                 ImGui::SetNextItemWidth(ImGui::GetColumnWidth() - style.ItemSpacing.x - style.WindowPadding.x);
 
                 static char buf[256] = "";
-                if (ImGui::InputTextWithHint("##Filter", "Search", buf, sizeof(buf)))
+                if (ImGui::InputTextWithHint("##Filter", Language::Get("Window", "Search", "Search..."), buf, sizeof(buf)))
                 {
                     Utils::ConvertUtf8ToWide(buf, FilterText, sizeof(buf));
                     Utils::ToLowerCase(FilterText);
@@ -343,10 +386,10 @@ void Editor::ProcessWindow()
                 {
                     // Freeze the header row
                     ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableSetupColumn("Name");
+                    ImGui::TableSetupColumn(Language::Get("Window", "Name", "Name"));
                     float scl = columnWidth / 445.5f;
-                    ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 100 * scl);
-                    ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, 75 * scl);
+                    ImGui::TableSetupColumn(Language::Get("Window", "Type", "Type"), ImGuiTableColumnFlags_WidthFixed, 100 * scl);
+                    ImGui::TableSetupColumn(Language::Get("Window", "Size", "Size"), ImGuiTableColumnFlags_WidthFixed, 75 * scl);
                     ImGui::TableHeadersRow();
 
                     if (pSelectedArchive->bUpdateSearch)
@@ -444,11 +487,13 @@ void Editor::ProcessWindow()
                 {
                     ImGui::BeginDisabled();
                 }
-                if (ImGui::Button("Cancel", barSz))
+                if (ImGui::Button(Language::Get("Window", "Cancel", "Cancel"), barSz))
                 {
                     pSelectedArchive->ProgressBar.bCancel = true;
                     pSelectedArchive->ProgressBar.Percentage = 0.0f;
-                    pSelectedArchive->AddLogMessage(L"Canceled operation");
+                    wchar_t logBuf[256];
+                    Utils::ConvertUtf8ToWide(Language::Get("Logs", "CanceledOperation", "Canceled operation"), logBuf, sizeof(logBuf));
+                    pSelectedArchive->AddLogMessage(logBuf);
                 }
                 if (!pSelectedArchive->ProgressBar.bInUse)
                 {
@@ -456,17 +501,18 @@ void Editor::ProcessWindow()
                 }
 
                 ImGui::NewLine();
-                ImGui::Text("IMG Format: %s", pSelectedArchive->GetFormatText().c_str());
-                ImGui::Text("Total Entries: %d", pSelectedArchive->EntryList.size());
+                ImGui::Text("%s %s", Language::Get("Window", "ArchiveType", "Archive Type:"), pSelectedArchive->GetFormatText().c_str());
+                ImGui::Text("%s %d", Language::Get("Window", "Entries", "Entries:"), pSelectedArchive->EntryList.size());
                 ImGui::Spacing();
 
                 if (ImGui::BeginTable("Log", 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_Borders))
                 {
                     // Freeze the header row
                     ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableSetupColumn("Logs");
+                    ImGui::TableSetupColumn(Language::Get("Window", "Logs", "Logs"));
                     ImGui::TableHeadersRow();
 
+                    std::lock_guard<std::mutex> lock(pSelectedArchive->LogMutex);
                     int size = static_cast<int>(pSelectedArchive->LogList.size() - 1);
                     char buf[256];
                     for (int i = size; i >= 0; --i)
@@ -484,15 +530,17 @@ void Editor::ProcessWindow()
                 ImGui::EndTabItem();
             }
 
-            // Remove element if closed form editor
-            if (!archive.bOpen)
-            {
-                CloseArchive(&archive);
             }
+
+            ImGui::EndTabBar();
         }
 
-        ImGui::EndTabBar();
-    }
+    } // end of else block for ArchiveList.empty()
+
+    // Safely remove closed archives outside the loop
+    std::erase_if(ArchiveList, [](const std::unique_ptr<IMGArchive>& arc) {
+        return !arc->bOpen;
+    });
 
     if (!blockHotkeys)
     {
@@ -547,13 +595,13 @@ void Editor::ProcessWindow()
     }
 }
 
-void Editor::AddArchiveEntry(IMGArchive &&archive)
+void Editor::AddArchiveEntry(std::unique_ptr<IMGArchive> archive)
 {
-    if (!archive.bCreateNew)
+    if (!archive->bCreateNew)
     {
-        for (IMGArchive &arc : ArchiveList)
+        for (const auto &arc : ArchiveList)
         {
-            if (arc.Path == archive.Path)
+            if (arc->Path == archive->Path)
             {
                 return;
             }
@@ -575,6 +623,9 @@ void Editor::Run()
     bool firstLaunch = Config.GetBoolValue("MAIN", "FirstLaunch", true);
     Ui::eTheme theme = static_cast<Ui::eTheme>(Config.GetLongValue("MAIN", "Theme",
                                                                    static_cast<long>(Ui::eTheme::SystemDefault)));
+    const char* lang = Config.GetValue("MAIN", "Language", "en.ini");
+
+    Language::Init(ConfigPath, lang);
 
     Ui::Specification spec;
     spec.Name = EDITOR_TITLE;
@@ -604,30 +655,43 @@ void Editor::Shutdown()
     {
         Config.SetBoolValue("MAIN", "FirstLaunch", false);
         Config.SetLongValue("MAIN", "Theme", static_cast<long>(pApp->GetTheme()));
+        Config.SetValue("MAIN", "Language", Language::GetCurrentLanguageFile().c_str());
         Config.SaveFile(fp);
         fclose(fp);
     }
+
+    Language::Shutdown();
 }
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-    // remove quotes
-    for (size_t i = 0; i < MAX_PATH; ++i)
+    // remove quotes if they exist around the path
+    char* pathStart = lpCmdLine;
+    if (pathStart[0] == '"')
     {
-        if (lpCmdLine[i] == '\0')
+        pathStart++;
+        for (size_t i = 0; i < MAX_PATH; ++i)
         {
-            break;
-        }
-        if (lpCmdLine[i] == '"')
-        {
-            lpCmdLine[i] = '\0';
+            if (pathStart[i] == '\0') break;
+            if (pathStart[i] == '"')
+            {
+                pathStart[i] = '\0';
+                break;
+            }
         }
     }
 
-    bool exists = std::filesystem::exists(&lpCmdLine[1]);
-    wchar_t buf[256];
-    Utils::ConvertUtf8ToWide(&lpCmdLine[1], buf, sizeof(buf));
-    Editor::AddArchiveEntry(exists ? IMGArchive(buf) : IMGArchive(L"Untitled", true));
+    if (pathStart[0] != '\0')
+    {
+        bool exists = std::filesystem::exists(pathStart);
+        if (exists)
+        {
+            wchar_t buf[256];
+            Utils::ConvertUtf8ToWide(pathStart, buf, sizeof(buf));
+            Editor::AddArchiveEntry(std::make_unique<IMGArchive>(buf));
+        }
+    }
+
     Updater::CheckUpdate();
     CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&Updater::Process, NULL, NULL, NULL);
     Editor::Run();
@@ -643,14 +707,14 @@ void Editor::NewArchive()
             std::wstring name = std::format(L"Untitled({})", i);
             if (!DoesArchiveExist(name))
             {
-                AddArchiveEntry({name, true});
+                AddArchiveEntry(std::make_unique<IMGArchive>(name, true));
                 break;
             }
         }
     }
     else
     {
-        AddArchiveEntry({L"Untitled", true});
+        AddArchiveEntry(std::make_unique<IMGArchive>(L"Untitled", true));
     }
 }
 
@@ -662,7 +726,7 @@ void Editor::OpenArchive()
     {
         if (IMGArchive::GetVersion(path) != eImgVer::Unknown)
         {
-            AddArchiveEntry(std::move(IMGArchive(std::move(path))));
+            AddArchiveEntry(std::make_unique<IMGArchive>(std::move(path)));
         }
         else
         {
@@ -688,7 +752,9 @@ void Editor::SaveArchive()
         {
             ArchiveInfo *info = new ArchiveInfo{pSelectedArchive, pSelectedArchive->Path, pSelectedArchive->GetVersion()};
             CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&IMGArchive::Save, info, NULL, NULL);
-            pSelectedArchive->AddLogMessage(L"Archive saved");
+            wchar_t logBuf[256];
+            Utils::ConvertUtf8ToWide(Language::Get("Logs", "ArchiveSaved", "Archive saved"), logBuf, sizeof(logBuf));
+            pSelectedArchive->AddLogMessage(logBuf);
         }
         else
         {
@@ -706,7 +772,9 @@ void Editor::SaveArchiveAs()
         ArchiveInfo *info = new ArchiveInfo{pSelectedArchive, path, ver, false};
         pSelectedArchive->SetVersion(ver);
         CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&IMGArchive::Save, info, NULL, NULL);
-        pSelectedArchive->AddLogMessage(L"Archive saved");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "ArchiveSaved", "Archive saved"), logBuf, sizeof(logBuf));
+        pSelectedArchive->AddLogMessage(logBuf);
     }
 }
 
@@ -769,6 +837,8 @@ void Editor::DeleteSelected()
                 return obj.bSelected;
             }),
         pSelectedArchive->EntryList.end());
+    pContextEntry = nullptr;
+    pSelectedArchive->SelectedList.clear(); // Clear to prevent dangling pointers from shifted elements
     pSelectedArchive->bUpdateSearch = true;
 }
 
@@ -791,7 +861,9 @@ void Editor::DumpList()
         {
             fwprintf(fp, L"%s\n", e.FileName);
         }
-        pSelectedArchive->AddLogMessage(L"Dumped to desktop");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "DumpedToDesktop", "Dumped to desktop"), logBuf, sizeof(logBuf));
+        pSelectedArchive->AddLogMessage(logBuf);
         fclose(fp);
     }
 }
@@ -802,9 +874,9 @@ void Editor::CloseArchive(IMGArchive *pArchive)
         std::remove_if(
             ArchiveList.begin(),
             ArchiveList.end(),
-            [pArchive](IMGArchive const &obj)
+            [pArchive](const std::unique_ptr<IMGArchive> &obj)
             {
-                return obj.bCreateNew ? obj.FileName == pArchive->FileName : obj.Path == pArchive->Path;
+                return obj->bCreateNew ? obj->FileName == pArchive->FileName : obj->Path == pArchive->Path;
             }),
         ArchiveList.end());
 }

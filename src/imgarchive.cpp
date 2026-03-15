@@ -12,7 +12,9 @@ IMGArchive::IMGArchive(std::wstring Path, bool CreateNew)
     {
         this->FileName = Path;
         this->bCreateNew = true;
-        AddLogMessage(L"Created archive");
+        wchar_t logBuf[256];
+        Utils::ConvertUtf8ToWide(Language::Get("Logs", "CreatedArchive", "Created archive"), logBuf, sizeof(logBuf));
+        AddLogMessage(logBuf);
         Parser = ParserPCv1::Get();
     }
     else
@@ -94,7 +96,9 @@ void IMGArchive::ExportAll(ArchiveInfo *pInfo)
             break;
         }
     }
-    pInfo->pArc->AddLogMessage(L"Exported archive");
+    wchar_t logBuf[256];
+    Utils::ConvertUtf8ToWide(Language::Get("Logs", "ExportedArchive", "Exported archive"), logBuf, sizeof(logBuf));
+    pInfo->pArc->AddLogMessage(logBuf);
     pInfo->pArc->ProgressBar.bInUse = false;
     delete pInfo;
 }
@@ -119,7 +123,9 @@ void IMGArchive::ExportSelected(ArchiveInfo *pInfo)
             }
         }
     }
-    pInfo->pArc->AddLogMessage(L"Exported entries");
+    wchar_t logBuf[256];
+    Utils::ConvertUtf8ToWide(Language::Get("Logs", "ExportedEntries", "Exported entries"), logBuf, sizeof(logBuf));
+    pInfo->pArc->AddLogMessage(logBuf);
     pInfo->pArc->ProgressBar.bInUse = false;
     delete pInfo;
 }
@@ -137,42 +143,58 @@ void IMGArchive::ImportEntries(ArchiveInfo *pInfo)
     std::vector<std::wstring> list;
     std::wstring temp = L"";
     std::wstring rootDir = L"";
-    for (wchar_t c : pInfo->path)
+    for (size_t i = 0; i < pInfo->path.size(); ++i)
     {
-        if (c != '\0')
+        wchar_t c = pInfo->path[i];
+        if (c != L'\0')
         {
             temp += c;
         }
         else
         {
-            if (temp == L"")
+            if (temp.empty())
             {
                 break;
             }
 
-            temp += L"\0";
-            if (std::filesystem::is_directory(temp)) // skip folders
+            if (rootDir.empty() && std::filesystem::is_directory(temp)) // first item might be directory
             {
-                rootDir = std::move(temp) + L"\\";
+                rootDir = temp + L"\\";
             }
             else
             {
-                list.push_back(std::move(rootDir + temp));
+                if (rootDir.empty())
+                {
+                    // Case where only a single file is selected
+                    list.push_back(temp);
+                }
+                else
+                {
+                    // Case where multiple files are selected within rootDir
+                    list.push_back(rootDir + temp);
+                }
             }
-            temp = L"";
+            temp.clear();
+
+            // Double null terminator indicates the end of the list
+            if (i + 1 < pInfo->path.size() && pInfo->path[i + 1] == L'\0')
+            {
+                break;
+            }
         }
     }
     
-    for (size_t i = 0; i != list.size(); ++i)
+    for (size_t i = 0; i < list.size(); ++i)
     {
         pInfo->pArc->ImportEntry(list[i], pInfo->removeExisting);
     }
-    pInfo->pArc->AddLogMessage(std::format(L"Imported {} entries", list.size()));
+    pInfo->pArc->AddLogMessage(std::format(L"Imported {} entries", list.size())); // Leaving this as is since it is formatted with size.
     pInfo->pArc->bUpdateSearch = true;
 }
 
 void IMGArchive::AddLogMessage(std::wstring &&message)
 {
+    std::lock_guard<std::mutex> lock(LogMutex);
     LogList.push_back(std::move(message));
 }
 

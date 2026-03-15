@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <atomic>
+#include <mutex>
 
 enum class eImgVer
 {
@@ -29,9 +31,9 @@ struct EntryInfo
 
 struct ProgressInfo
 {
-    float Percentage = 0.0f;
-    bool bCancel = false;
-    bool bInUse = false;
+    std::atomic<float> Percentage = 0.0f;
+    std::atomic<bool> bCancel = false;
+    std::atomic<bool> bInUse = false;
 };
 
 class IMGArchive;
@@ -61,6 +63,7 @@ public:
     std::vector<EntryInfo> EntryList;
     std::vector<EntryInfo*> SelectedList;
     std::vector<std::wstring> LogList;
+    std::mutex LogMutex;
     ProgressInfo ProgressBar;
     IParser *Parser = nullptr;
     
