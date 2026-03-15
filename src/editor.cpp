@@ -341,13 +341,29 @@ void Editor::ProcessWindow()
 
     if (ArchiveList.empty())
     {
-        for (const auto &archivePtr : ArchiveList)
+        pSelectedArchive = nullptr;
+
+        // Display centered helper text
+        ImVec2 windowSize = ImGui::GetWindowSize();
+        const char* helperText = Language::Get("Window", "HelperText", "Open a IMG file to get started.");
+        ImVec2 textSize = ImGui::CalcTextSize(helperText);
+
+        ImGui::SetCursorPos(ImVec2((windowSize.x - textSize.x) * 0.5f, (windowSize.y - textSize.y) * 0.5f));
+        ImGui::TextDisabled("%s", helperText);
+    }
+    else
+    {
+        ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll | ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_AutoSelectNewTabs;
+        pSelectedArchive = nullptr;
+        if (ImGui::BeginTabBar("Archives", tabFlags))
         {
-            IMGArchive &archive = *archivePtr;
-            char buf[24];
-            Utils::ConvertWideToUtf8(archive.FileName.c_str(), buf, sizeof(buf));
-            if (ImGui::BeginTabItem(buf, &archive.bOpen))
+            for (const auto &archivePtr : ArchiveList)
             {
+                IMGArchive &archive = *archivePtr;
+                char buf[24];
+                Utils::ConvertWideToUtf8(archive.FileName.c_str(), buf, sizeof(buf));
+                if (ImGui::BeginTabItem(buf, &archive.bOpen))
+                {
                 pSelectedArchive = &archive;
                 ImGui::Columns(2, NULL, false);
                 float columnWidth = windowWidth / 1.5f;
@@ -512,13 +528,12 @@ void Editor::ProcessWindow()
                 ImGui::EndTabItem();
             }
 
+            }
+
+            ImGui::EndTabBar();
         }
 
-        // Safely remove closed archives outside the loop
-        std::erase_if(ArchiveList, [](const std::unique_ptr<IMGArchive>& arc) {
-            return !arc->bOpen;
-        });
-    }
+    } // end of else block for ArchiveList.empty()
 
     // Safely remove closed archives outside the loop
     std::erase_if(ArchiveList, [](const std::unique_ptr<IMGArchive>& arc) {
@@ -675,10 +690,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         }
     }
 
-    bool exists = std::filesystem::exists(&lpCmdLine[1]);
-    wchar_t buf[256];
-    Utils::ConvertUtf8ToWide(&lpCmdLine[1], buf, sizeof(buf));
-    Editor::AddArchiveEntry(exists ? std::make_unique<IMGArchive>(buf) : std::make_unique<IMGArchive>(L"Untitled", true));
     Updater::CheckUpdate();
     CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)&Updater::Process, NULL, NULL, NULL);
     Editor::Run();
